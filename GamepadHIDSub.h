@@ -1,10 +1,7 @@
-#ifndef ESP32_BLE_GAMEPAD_H
-#define ESP32_BLE_GAMEPAD_H
+#pragma once
+
 #include "sdkconfig.h"
-
-
 #include "nimconfig.h"
-#if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
 
 #include "BleConnectionStatus.h"
 #include "NimBLEHIDDevice.h"
@@ -77,6 +74,14 @@ class GamepadHIDSub : public BleHIDSubBase
         // Called multiple times, until the function returns 0. Index is the count.
         virtual int GetInputReportIndex(int Index);
 
+        //------------------------------------------------------------
+        // Some higher level convenience functions
+
+        // WARNING: Buttons in Gamepad start counting from 1!
+        void PressButton(int i, int DurationMs, int DelayAfterMs=0);        
+
+
+
     private:
         uint8_t _buttons[16]; // 8 bits x 16 --> 128 bits
         uint8_t _specialButtons;
@@ -104,6 +109,8 @@ class GamepadHIDSub : public BleHIDSubBase
         uint8_t specialButtonBitPosition(uint8_t specialButton);
 };
 
-#endif // CONFIG_BT_NIMBLE_ROLE_PERIPHERAL
 
-#endif // ESP32_BLE_GAMEPAD_H
+// Press all buttons etc. in the sequence as required by Steam to configure a 
+// generic gamepad. The GamepadHIDSub object needs to be configured with a
+// SteamGamepadConfiguration object.
+void RunSteamGamepadTest(GamepadHIDSub* Gamepad);

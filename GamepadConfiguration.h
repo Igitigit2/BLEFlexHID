@@ -316,4 +316,11 @@ public:
     void setHardwareRevision(char *value);
 };
 
+
+class SteamGamepadConfiguration : public GamepadConfiguration
+{
+    public:
+        SteamGamepadConfiguration();
+};
+
 #endif

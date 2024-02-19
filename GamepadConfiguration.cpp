@@ -191,3 +191,41 @@ void GamepadConfiguration::setSoftwareRevision(char *value) { _softwareRevision 
 void GamepadConfiguration::setSerialNumber(char *value) { _serialNumber = value; }
 void GamepadConfiguration::setFirmwareRevision(char *value) { _firmwareRevision = value; }
 void GamepadConfiguration::setHardwareRevision(char *value) { _hardwareRevision = value; }
+
+//***************************************************************************
+// Special configuration for Steam
+
+#define numOfButtons 24
+#define numOfHatSwitches 0
+#define enableX true
+#define enableY true
+#define enableZ false
+#define enableRZ false
+#define enableRX true
+#define enableRY true
+#define enableSlider1 false
+#define enableSlider2 false
+#define enableRudder true
+#define enableThrottle true
+#define enableAccelerator false
+#define enableBrake false
+#define enableSteering false
+
+
+SteamGamepadConfiguration::SteamGamepadConfiguration()
+{
+    // Setup controller with 32 buttons, accelerator, brake and steering
+    setAutoReport(false);
+    setControllerType(CONTROLLER_TYPE_MULTI_AXIS); // CONTROLLER_TYPE_JOYSTICK, CONTROLLER_TYPE_GAMEPAD (DEFAULT), CONTROLLER_TYPE_MULTI_AXIS
+    setButtonCount(numOfButtons);
+    setIncludeStart(true);
+    setIncludeSelect(true);
+    setWhichAxes(enableX, enableY, enableZ, enableRX, enableRY, enableRZ, enableSlider1, enableSlider2);      // Can also be done per-axis individually. All are true by default
+    setWhichSimulationControls(enableRudder, enableThrottle, enableAccelerator, enableBrake, enableSteering); // Can also be done per-control individually. All are false by default
+    setHatSwitchCount(numOfHatSwitches);                                                                      // 1 by default
+    // Some non-Windows operating systems and web based gamepad testers don't like min axis set below 0, so 0 is set by default
+    setAxesMin(0x8001); // -32767 --> int16_t - 16 bit signed integer - Can be in decimal or hexadecimal
+    setAxesMax(0x7FFF); // 32767 --> int16_t - 16 bit signed integer - Can be in decimal or hexadecimal 
+}
+
+

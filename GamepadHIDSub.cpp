@@ -1300,6 +1300,139 @@ bool GamepadHIDSub::isPressed(uint8_t b)
 
 
 //************************************************************
+// Some higher level convenience functions
+
+
+// WARNING: Buttons in Gamepad start with 1!
+void GamepadHIDSub::PressButton(int i, int DurationMs, int DelayAfterMs)
+{
+    press(i);
+    sendReport();
+    delay(DurationMs);
+    release(i);
+    sendReport();
+    delay(DelayAfterMs);
+}
+
+
+// Wait for a key press on Serial.
+void GPWaitForSerial()
+{
+    while(Serial.available()){Serial.read();}
+    while (!Serial.available()) { }
+    Serial.println(Serial.read());
+}
+
+// Press all buttons etc. in the sequence as required by Steam to configure a 
+// generic gamepad. The GamepadHIDSub object needs to be configured with a
+// SteamGamepadConfiguration object.
+void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
+{
+	#define TEST_STEP                   1024
+	#define STEAM_DELAY_BETWEEN_REPORTS 200
+    #define BTN_PRESS_DURATION          100
+    #define BTN_DELAY_AFTER_RELEASE     200
+
+	Gamepad->setX(0);
+	Gamepad->setY(0);
+	Gamepad->setRX(0);
+	Gamepad->setRY(0);
+	Gamepad->setRudder(0);
+	Gamepad->sendReport();
+
+	Serial.println("Presss any key to start!");
+	GPWaitForSerial();
+	// Steam Einrichtung
+	Serial.println("Pressing 'A'"); Gamepad->PressButton(1, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+	Serial.println("Pressing 'B'"); Gamepad->PressButton(2, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);       
+	Serial.println("Pressing 'X'"); Gamepad->PressButton(3, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
+	Serial.println("Pressing 'Y'"); Gamepad->PressButton(4, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE); 
+
+	Serial.println("Pressing 'DPl'"); Gamepad->PressButton(15, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+	Serial.println("Pressing 'DPr'"); Gamepad->PressButton(16, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+	Serial.println("Pressing 'DPt'"); Gamepad->PressButton(13, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+	Serial.println("Pressing 'DPd'"); Gamepad->PressButton(14, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);    
+
+	//---------------------------------------------------------------------
+	Serial.println("X to min (left) and back");
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setX(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->setX(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("X to max (right) and back");
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setX(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->setX(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("Y to max (top) and back");
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->setY(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("Y to min (bottom) and back");
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->setY(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("Pressing 'LSB/L3 (left analog)'"); Gamepad->PressButton(11, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);    
+
+	//---------------------------------------------------------------------
+	#define SET_X setRX     // setRudder
+	#define SET_Y setRY     // setThrottle
+	Serial.println("RX to min (left) and back");
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->SET_X(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->SET_X(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("RX to max (right) and back");
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->SET_X(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->SET_X(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("RY to max (top) and back");
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->SET_Y(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->SET_Y(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("RY to min (bottom) and back");
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->SET_Y(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->SET_Y(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+	Serial.println("Pressing 'RSB/R3 (right analog)'"); Gamepad->PressButton(12, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
+
+	//---------------------------------------------------------------------
+	Serial.println("Pressing 'Left shoulder (front left top)'");     Gamepad->PressButton(5, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+	Serial.println("Pressing 'Left trigger  (front left bottom)'");  Gamepad->PressButton(7, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+	Serial.println("Pressing 'Right shoulder (front right top)'");   Gamepad->PressButton(6, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);       
+	Serial.println("Pressing 'Right trigger (front right bottom)'"); Gamepad->PressButton(8, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+
+	//---------------------------------------------------------------------
+	Serial.println("Pressing 'Back/Display/Share (middle left)'");  Gamepad->PressButton(9, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);      
+	Serial.println("Pressing 'Start/Menu/Options (middle right)'"); Gamepad->PressButton(10, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
+
+	Serial.println("Pressing 'Home/Guide (middle center'"); Gamepad->PressButton(17, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+	Serial.println("Pressing 'Share/Record (middle lower'"); Gamepad->PressButton(18, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+
+	#if 0
+	for (int i=0; i<4; i++)
+	{
+		GPWaitForSerial();
+		Serial.println("Pressing 'Share?'"); PressButton(1);     
+	}
+	#endif
+}
+
+
+//************************************************************
 // Functions required by the BLE Master
 
 // Return the HID descriptor for the device  
