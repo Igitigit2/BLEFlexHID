@@ -210,18 +210,11 @@ private:
     bool _whichSpecialButtons[POSSIBLESPECIALBUTTONS];
     bool _whichAxes[POSSIBLEAXES];
     bool _whichSimulationControls[POSSIBLESIMULATIONCONTROLS];
-    uint16_t _vid;
-    uint16_t _pid;
-	uint16_t _guidVersion;
+//	uint16_t _guidVersion;
     int16_t _axesMin;
     int16_t _axesMax;
     int16_t _simulationMin;
     int16_t _simulationMax;
-    char *_modelNumber;
-    char *_softwareRevision;
-    char *_serialNumber;
-    char *_firmwareRevision;
-    char *_hardwareRevision;
 
 public:
     GamepadConfiguration();
@@ -302,18 +295,11 @@ public:
     void setIncludeBrake(bool value);
     void setIncludeSteering(bool value);
     void setWhichSimulationControls(bool rudder, bool throttle, bool accelerator, bool brake, bool steering);
-    void setVid(uint16_t value);
-    void setPid(uint16_t value);
 	void setGuidVersion(uint16_t value);
     void setAxesMin(int16_t value);
     void setAxesMax(int16_t value);
     void setSimulationMin(int16_t value);
     void setSimulationMax(int16_t value);
-    void setModelNumber(char *value);
-    void setSoftwareRevision(char *value);
-    void setSerialNumber(char *value);
-    void setFirmwareRevision(char *value);
-    void setHardwareRevision(char *value);
 };
 
 

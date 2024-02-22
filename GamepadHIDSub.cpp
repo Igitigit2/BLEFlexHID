@@ -1,3 +1,9 @@
+// https://hardwaretester.com/gamepad
+
+//#define USE_TRIGGERS
+// #define USE_TRIGGERS2
+#define MAX_REPORT_DESCRIPTOR_BYTES     150
+
 #include <NimBLEDevice.h>
 #include <NimBLEUtils.h>
 #include <NimBLEServer.h>
@@ -19,6 +25,7 @@
 static const char *LOG_TAG = "GamepadHIDSub";
 #endif
 
+#if 0
 #define SERVICE_UUID_DEVICE_INFORMATION        "180A"      // Service - Device information
 
 #define CHARACTERISTIC_UUID_MODEL_NUMBER       "2A24"      // Characteristic - Model Number String - 0x2A24
@@ -26,11 +33,10 @@ static const char *LOG_TAG = "GamepadHIDSub";
 #define CHARACTERISTIC_UUID_SERIAL_NUMBER      "2A25"      // Characteristic - Serial Number String - 0x2A25
 #define CHARACTERISTIC_UUID_FIRMWARE_REVISION  "2A26"      // Characteristic - Firmware Revision String - 0x2A26
 #define CHARACTERISTIC_UUID_HARDWARE_REVISION  "2A27"      // Characteristic - Hardware Revision String - 0x2A27
+#endif
 
 
-
-// uint8_t tempHidReportDescriptor[150];
-uint8_t tempHidReportDescriptor[300];
+uint8_t tempHidReportDescriptor[MAX_REPORT_DESCRIPTOR_BYTES];
 int hidReportDescriptorSize = 0;
 uint8_t reportSize = 0;
 uint8_t numOfButtonBytes = 0;
@@ -66,19 +72,46 @@ GamepadHIDSub::GamepadHIDSub() : _buttons(),
                                                                                                        _hat2(0),
                                                                                                        _hat3(0),
                                                                                                        _hat4(0)
+                                                                                                       
 {
     this->resetButtons();
 }
 
 void GamepadHIDSub::resetButtons()
 {
-    memset(&_buttons, 0, sizeof(_buttons));
+    memset(_buttons, 0, sizeof(_buttons));
+    memset(TriggerButtons, 0, sizeof(TriggerButtons));
 }
+
+
+#ifdef USE_TRIGGERS
+    // Add 2 Trigger buttons
+    uint8_t TriggerButtonsDescription[] =
+    {
+//        0x05, 0x09,                    //     USAGE_PAGE (Button)
+        0x05, 0x02,                    //     USAGE_PAGE (Simulation Control)       // 94 Index trigger? C0?
+        0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
+        0x26, 0xFF, 0x00,              //     LOGICAL_MAXIMUM (255)
+//        0x09, 0xC4,                    //     USAGE(Acceleration)
+        0x09, 0xC0,                    //     USAGE(Trigger)           
+        0x09, 0xC0,                    //     USAGE(Trigger)           
+        0x75, 0x08,                    //     REPORT_SIZE (8)
+        0x95, 0x02,                    //     REPORT_COUNT (2)
+        0x81, 0x02,                    //     INPUT (Data,Var,Abs)
+    };
+
+    const int numOfTriggerBytes=2;
+#else
+    const int numOfTriggerBytes=0;
+#endif
 
 void GamepadHIDSub::Configure(GamepadConfiguration *config)
 {
     configuration = *config; // we make a copy, so the user can't change actual values midway through operation, without calling the begin function again
 
+    //----------------------------------------------------
+    // Calculate the final size of the REPORT (not the descriptor!)
+ 
     uint8_t buttonPaddingBits = 8 - (configuration.getButtonCount() % 8);
     if (buttonPaddingBits == 8)
     {
@@ -104,23 +137,26 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config)
         numOfSpecialButtonBytes++;
     }
 
-    reportSize = numOfButtonBytes + numOfSpecialButtonBytes + numOfAxisBytes + numOfSimulationBytes + configuration.getHatSwitchCount();
+    reportSize = numOfButtonBytes + numOfSpecialButtonBytes + numOfTriggerBytes + numOfAxisBytes + numOfSimulationBytes + configuration.getHatSwitchCount();
+
+    //----------------------------------------------------
+    // Build the report descriptor
 
     // USAGE_PAGE (Generic Desktop)
-    tempHidReportDescriptor[hidReportDescriptorSize++] = 0x05;
-    tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
+    tempHidReportDescriptor[hidReportDescriptorSize++] = 0x05;      // Gamepad
+    tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;      // 3D game controller
 
     // USAGE (Joystick - 0x04; Gamepad - 0x05; Multi-axis Controller - 0x08)
     tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
     tempHidReportDescriptor[hidReportDescriptorSize++] = configuration.getControllerType();
 
     // COLLECTION (Application)
-    tempHidReportDescriptor[hidReportDescriptorSize++] = 0xa1;
-    tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
+    tempHidReportDescriptor[hidReportDescriptorSize++] = 0xa1;      //?
+    tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;      //?
 
-    // REPORT_ID (Default: 5)
+    // REPORT_ID (Default: 5, Gamepad)
     tempHidReportDescriptor[hidReportDescriptorSize++] = 0x85;
-    tempHidReportDescriptor[hidReportDescriptorSize++] = GAMEPAD_REPORT_ID; //configuration.getHidReportId();        // resolves default to 3
+    tempHidReportDescriptor[hidReportDescriptorSize++] = GAMEPAD_REPORT_ID; // configuration.getHidReportId();        
 
     if (configuration.getButtonCount() > 0)
     {
@@ -281,7 +317,6 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config)
 
         if (specialButtonPaddingBits > 0)
         {
-
             // REPORT_SIZE (1)
             tempHidReportDescriptor[hidReportDescriptorSize++] = 0x75;
             tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
@@ -297,6 +332,15 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config)
         } // Padding Bits Needed
 
     } // Special Buttons
+
+#ifdef USE_TRIGGERS
+    // Add 2 Trigger buttons
+    // TriggerButtonsDescription[3] = configuration.getButtonCount()+1;
+    // TriggerButtonsDescription[5] = configuration.getButtonCount()+2;
+    // Serial.printf("Adding %d bytes for triggers\n", sizeof(TriggerButtonsDescription));
+    memcpy(tempHidReportDescriptor+hidReportDescriptorSize, TriggerButtonsDescription, sizeof(TriggerButtonsDescription));
+    hidReportDescriptorSize += sizeof(TriggerButtonsDescription);
+#endif
 
     if (configuration.getAxisCount() > 0)
     {
@@ -542,6 +586,9 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config)
     // END_COLLECTION (Application)
     tempHidReportDescriptor[hidReportDescriptorSize++] = 0xc0;
 
+    if (hidReportDescriptorSize>MAX_REPORT_DESCRIPTOR_BYTES)
+        Serial.println("ERROR: Gamepad report descriptor is too long!");
+
     Serial.printf("Gamepad HID descriptor size: %d\n", hidReportDescriptorSize);
 }
 
@@ -681,6 +728,16 @@ void GamepadHIDSub::sendReport(void)
             m[currentReportIndex++] = _specialButtons;
         }
 
+#ifdef USE_TRIGGERS
+        // 2 Trigger buttons
+        // Serial.printf("Adding %d bytes to report for triggers\n", numOfTriggerBytes);
+        for (int i=0; i<numOfTriggerBytes; i++)
+            m[currentReportIndex++] = TriggerButtons[i];
+#else
+    currentReportIndex += numOfTriggerBytes;
+#endif
+
+        // Axes
         if (configuration.getIncludeXAxis())
         {
             m[currentReportIndex++] = _x;
@@ -1287,6 +1344,19 @@ void GamepadHIDSub::setSteering(int16_t steering)
     }
 }
 
+void GamepadHIDSub::setTrigger(int Index, int8_t Value)
+{
+    if (Index>=0 && Index<MAX_TRIGGERS)
+    {
+        TriggerButtons[Index] = Value;
+    }
+    if (configuration.getAutoReport())
+    {
+        sendReport();
+    }
+}
+
+
 bool GamepadHIDSub::isPressed(uint8_t b)
 {
     uint8_t index = (b - 1) / 8;
@@ -1320,7 +1390,8 @@ void GPWaitForSerial()
 {
     while(Serial.available()){Serial.read();}
     while (!Serial.available()) { }
-    Serial.println(Serial.read());
+    Serial.read();
+    // Serial.println(Serial.read());
 }
 
 // Press all buttons etc. in the sequence as required by Steam to configure a 
@@ -1329,9 +1400,12 @@ void GPWaitForSerial()
 void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 {
 	#define TEST_STEP                   1024
-	#define STEAM_DELAY_BETWEEN_REPORTS 200
-    #define BTN_PRESS_DURATION          100
-    #define BTN_DELAY_AFTER_RELEASE     200
+	#define STEAM_DELAY_BETWEEN_REPORTS 500
+    #define BTN_PRESS_DURATION          200
+    #define BTN_DELAY_AFTER_RELEASE     300
+    #define STEAM_DELAY_BETWEEN_AXES    30
+
+
 
 	Gamepad->setX(0);
 	Gamepad->setY(0);
@@ -1339,8 +1413,33 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	Gamepad->setRY(0);
 	Gamepad->setRudder(0);
 	Gamepad->sendReport();
+    Gamepad->setZ(constrain(-32767, -32767, 32767)); //Gamepad->sendReport(); 
+    Gamepad->setRZ(constrain(-32767, -32767, 32767)); //Gamepad->sendReport(); 
 
-	Serial.println("Presss any key to start!");
+
+    while(0)
+    {
+
+#if 0
+	    // Serial.println("Pressing 'A'"); Gamepad->PressButton(1, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+        Gamepad->setTrigger(0, 255); Gamepad->sendReport();  
+        Gamepad->setTrigger(1, 0);   Gamepad->sendReport();  
+        delay(2000);
+        Gamepad->setTrigger(0, 0);   Gamepad->sendReport();  
+        Gamepad->setTrigger(1, 255); Gamepad->sendReport();  
+        delay(2000);
+#endif
+
+        Gamepad->setZ(constrain(32767, -32767, 32767)); //Gamepad->sendReport(); 
+        Gamepad->setRZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
+        delay(2000);
+        Gamepad->setZ(constrain(-32767, -32767, 32767)); //Gamepad->sendReport(); 
+        Gamepad->setRZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
+        delay(2000);
+    }
+
+#if 1
+	Serial.println("Presss any key to start Steam controller test!");
 	GPWaitForSerial();
 	// Steam Einrichtung
 	Serial.println("Pressing 'A'"); Gamepad->PressButton(1, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
@@ -1353,36 +1452,45 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	Serial.println("Pressing 'DPt'"); Gamepad->PressButton(13, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
 	Serial.println("Pressing 'DPd'"); Gamepad->PressButton(14, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);    
 
+	// Serial.println("Press Kb to continue!"); GPWaitForSerial();
+
 	//---------------------------------------------------------------------
+
 	Serial.println("X to min (left) and back");
-	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setX(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setX(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_AXES);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Gamepad->setX(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
 	Serial.println("X to max (right) and back");
-	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setX(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setX(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_AXES);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Gamepad->setX(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
-	Serial.println("Y to max (top) and back");
-	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+//Serial.println("Press Kb to continue! next Y->max"); GPWaitForSerial();
+	Serial.println("Y to max (top) and back");  // Wird nicht erkannt!!
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(2*STEAM_DELAY_BETWEEN_AXES);}
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Gamepad->setY(0); Gamepad->sendReport(); 
+	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+// Serial.println("Press Kb to continue!"); GPWaitForSerial();
+
+//Serial.println("Press Kb to continue! next Y->min"); GPWaitForSerial();
+	Serial.println("Y to min (bottom) and back");
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_AXES);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Gamepad->setY(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
-	Serial.println("Y to min (bottom) and back");
-	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
-	delay(STEAM_DELAY_BETWEEN_REPORTS);  
-	Gamepad->setY(0); Gamepad->sendReport(); 
-	delay(STEAM_DELAY_BETWEEN_REPORTS);  
+
+//Serial.println("Press Kb to continue! next: LSB"); GPWaitForSerial();
 
 	Serial.println("Pressing 'LSB/L3 (left analog)'"); Gamepad->PressButton(11, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);    
 
 	//---------------------------------------------------------------------
-	#define SET_X setRX     // setRudder
-	#define SET_Y setRY     // setThrottle
+	#define SET_X setRX     
+	#define SET_Y setRY     
 	Serial.println("RX to min (left) and back");
 	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->SET_X(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
@@ -1407,13 +1515,46 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	Gamepad->SET_Y(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
+	// Serial.println("Press Kb to continue!"); GPWaitForSerial();
+
 	Serial.println("Pressing 'RSB/R3 (right analog)'"); Gamepad->PressButton(12, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
+
 
 	//---------------------------------------------------------------------
 	Serial.println("Pressing 'Left shoulder (front left top)'");     Gamepad->PressButton(5, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
-	Serial.println("Pressing 'Left trigger  (front left bottom)'");  Gamepad->PressButton(7, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+
+//	Serial.println("Press Kb to continue! next: Left trigger"); GPWaitForSerial();
+
+//	Serial.println("Pressing 'Left trigger  (front left bottom)'");  Gamepad->PressButton(7, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+	Serial.println("Pressing 'Left trigger  (front left bottom)'");  
+    // Gamepad->setTrigger(0, 255); Gamepad->sendReport();  
+    // Gamepad->setBrake(255); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_REPORTS); Gamepad->setBrake(0); Gamepad->sendReport(); 
+
+	//Gamepad->setZ(32767); Gamepad->sendReport(); 
+	//delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	//Gamepad->setZ(0); Gamepad->sendReport(); 
+    Gamepad->setZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
+    delay(STEAM_DELAY_BETWEEN_REPORTS);  
+    Gamepad->setZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
+
+//	Serial.println("Press Kb to continue!"); GPWaitForSerial();
+
+
 	Serial.println("Pressing 'Right shoulder (front right top)'");   Gamepad->PressButton(6, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);       
-	Serial.println("Pressing 'Right trigger (front right bottom)'"); Gamepad->PressButton(8, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+	Serial.println("Pressing 'Right trigger (front right bottom)'"); 
+    Gamepad->setRZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
+    delay(STEAM_DELAY_BETWEEN_REPORTS);  
+    Gamepad->setRZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
+
+   // Gamepad->PressButton(8, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+    // Gamepad->setTrigger(1, 255); Gamepad->sendReport();  
+    // Gamepad->setAccelerator(255); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_REPORTS); Gamepad->setAccelerator(0); Gamepad->sendReport(); 
+
+	//Gamepad->setRZ(32767); Gamepad->sendReport(); 
+	//delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	//Gamepad->setRZ(0); Gamepad->sendReport(); 
+
+//	Serial.println("Press Kb to continue!"); GPWaitForSerial();
 
 	//---------------------------------------------------------------------
 	Serial.println("Pressing 'Back/Display/Share (middle left)'");  Gamepad->PressButton(9, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);      
@@ -1425,10 +1566,11 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	#if 0
 	for (int i=0; i<4; i++)
 	{
-		GPWaitForSerial();
+		Serial.println("Press Kb to continue!"); GPWaitForSerial();
 		Serial.println("Pressing 'Share?'"); PressButton(1);     
 	}
 	#endif
+#endif
 }
 
 

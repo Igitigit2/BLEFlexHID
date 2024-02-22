@@ -93,6 +93,16 @@ class BleFlexHID
 {
     public:
         BleFlexHID(std::string deviceName = "ESP32 BLE Gamepad", std::string deviceManufacturer = "Espressif", uint8_t batteryLevel = 100);
+
+        /**
+         * @brief Sets the Plug n Play characteristic value.
+         * @param [in] VendorSourceID The vendor ID source number.
+         * @param [in] VendorID The vendor ID number.
+         * @param [in] ProductID The product ID number.
+         * @param [in] Version The produce version number.
+         */
+        void SetProductID(int VendorSourceID, int VendorID, int ProductID, int Version);
+
         void begin();
         void end(void);
         bool isConnected(void);
@@ -115,8 +125,12 @@ class BleFlexHID
         virtual void onStarted(NimBLEServer *pServer){};
 
     private:
-        void rawAction(uint8_t msg[], char msgSize);
+        // void rawAction(uint8_t msg[], char msgSize);
         static void taskServer(void *pvParameter);
+        static int SigID;
+        static int VendorID;
+        static int ProductID;
+        static int Version;
 
         BleConnectionStatus *connectionStatus;
         NimBLEHIDDevice *hid;
@@ -126,6 +140,7 @@ class BleFlexHID
         NimBLECharacteristic* InputCharacterstics [MAX_CHARACTERISTICS];
         NimBLECharacteristic* OutputCharacterstics[MAX_CHARACTERISTICS];
         NimBLECharacteristicCallbacks* OutputCallbacks[MAX_CHARACTERISTICS];
+
         
         int NumDevices;                 // Number of devices in Devices[]
         int NumInputCharacteristics;

@@ -65,6 +65,24 @@ BleFlexHID::BleFlexHID(std::string _deviceName, std::string _deviceManufacturer,
     NumOutputCharacteristics = 0;
 }
 
+
+
+/**
+ * @brief Sets the Plug n Play characteristic value.
+ * @param [in] VendorSourceID The vendor ID source number.
+ * @param [in] VendorID The vendor ID number.
+ * @param [in] ProductID The product ID number.
+ * @param [in] Version The produce version number.
+ */
+void BleFlexHID::SetProductID(int VendorSourceID, int _VendorID, int _ProductID, int _Version)
+{
+    SigID = VendorSourceID;
+    VendorID = _VendorID;
+    ProductID = _ProductID;
+    Version = _Version;
+}
+
+
 bool BleFlexHID::AddDevice(BleHIDSubBase* pDevice)
 {
     if (NumDevices>=MAX_HIDS)
@@ -204,6 +222,14 @@ void BleFlexHID::setBatteryLevel(uint8_t level)
     }
 }
 
+
+
+int BleFlexHID::SigID = 0x02;
+int BleFlexHID::VendorID=0xe502;
+int BleFlexHID::ProductID=0xa111;
+int BleFlexHID::Version=0x0210;
+
+
 void BleFlexHID::taskServer(void *pvParameter)
 {
     BleFlexHID* bleInstance = (BleFlexHID *) pvParameter; //static_cast<BleComboKeyboard *>(pvParameter);
@@ -216,8 +242,16 @@ void BleFlexHID::taskServer(void *pvParameter)
     bleInstance->BuildMasterDescriptor();
     bleInstance->BuildCharacteristicsTable();
 
+    /**
+     * @brief Sets the Plug n Play characteristic value.
+     * @param [in] sig The vendor ID source number.
+     * @param [in] vid The vendor ID number.
+     * @param [in] pid The product ID number.
+     * @param [in] version The produce version number.
+     */
+
     bleInstance->hid->manufacturer()->setValue(bleInstance->deviceManufacturer);
-    bleInstance->hid->pnp(0x02, 0xe502, 0xa111, 0x0210);
+    bleInstance->hid->pnp(SigID, VendorID, ProductID, Version);
     bleInstance->hid->hidInfo(0x00,0x01);
 
     BLESecurity *pSecurity = new BLESecurity();

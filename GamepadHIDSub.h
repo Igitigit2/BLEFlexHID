@@ -9,6 +9,10 @@
 #include "BleFlexHID.h"
 #include "GamepadConfiguration.h"
 
+#define MAX_BUTTONS    24
+#define MAX_TRIGGERS    2
+
+
 class GamepadHIDSub : public BleHIDSubBase
 {
     public:
@@ -61,6 +65,7 @@ class GamepadHIDSub : public BleHIDSubBase
         void setBrake(int16_t brake = 0);
         void setSteering(int16_t steering = 0);
         void setSimulationControls(int16_t rudder = 0, int16_t throttle = 0, int16_t accelerator = 0, int16_t brake = 0, int16_t steering = 0);
+        void setTrigger(int Index, int8_t Value); 
         void sendReport();
         bool isPressed(uint8_t b = BUTTON_1); // check BUTTON_1 by default
         void resetButtons();
@@ -83,7 +88,7 @@ class GamepadHIDSub : public BleHIDSubBase
 
 
     private:
-        uint8_t _buttons[16]; // 8 bits x 16 --> 128 bits
+        uint8_t _buttons[MAX_BUTTONS]; // 8 bits x 16 --> 128 bits
         uint8_t _specialButtons;
         int16_t _x;
         int16_t _y;
@@ -102,6 +107,7 @@ class GamepadHIDSub : public BleHIDSubBase
         int16_t _hat2;
         int16_t _hat3;
         int16_t _hat4;
+        int8_t TriggerButtons[MAX_TRIGGERS];
 
         GamepadConfiguration configuration;
         BleConnectionStatus *connectionStatus;
