@@ -226,9 +226,8 @@ void BleFlexHID::setBatteryLevel(uint8_t level)
 
 int BleFlexHID::SigID = 0x02;
 int BleFlexHID::VendorID=0xe502;
-int BleFlexHID::ProductID=0xa111;
 int BleFlexHID::Version=0x0210;
-
+int BleFlexHID::ProductID=0x1234;       // Dev
 
 void BleFlexHID::taskServer(void *pvParameter)
 {
