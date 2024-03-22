@@ -12,6 +12,7 @@
 #define MAX_BUTTONS    24
 #define MAX_TRIGGERS    2
 
+typedef void (*GamepadCallback)(const uint8_t* ReportData);
 
 class GamepadHIDSub : public BleHIDSubBase
 {
@@ -69,7 +70,7 @@ class GamepadHIDSub : public BleHIDSubBase
         void sendReport();
         bool isPressed(uint8_t b = BUTTON_1); // check BUTTON_1 by default
         void resetButtons();
-        void Configure(GamepadConfiguration *config);
+        void Configure(GamepadConfiguration *config, GamepadCallback pGPCallback);
         bool isConnected(void);
 
         // Return the HID descriptor for the device  
@@ -78,7 +79,8 @@ class GamepadHIDSub : public BleHIDSubBase
         // Return the input and output characteristics of the device. 
         // Called multiple times, until the function returns 0. Index is the count.
         virtual int GetInputReportIndex(int Index);
-
+        virtual int GetOutputReportIndex(int Index, NimBLECharacteristicCallbacks** OutputCallback);
+        
         //------------------------------------------------------------
         // Some higher level convenience functions
 

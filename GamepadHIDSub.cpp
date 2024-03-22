@@ -25,16 +25,6 @@
 static const char *LOG_TAG = "GamepadHIDSub";
 #endif
 
-#if 0
-#define SERVICE_UUID_DEVICE_INFORMATION        "180A"      // Service - Device information
-
-#define CHARACTERISTIC_UUID_MODEL_NUMBER       "2A24"      // Characteristic - Model Number String - 0x2A24
-#define CHARACTERISTIC_UUID_SOFTWARE_REVISION  "2A28"      // Characteristic - Software Revision String - 0x2A28
-#define CHARACTERISTIC_UUID_SERIAL_NUMBER      "2A25"      // Characteristic - Serial Number String - 0x2A25
-#define CHARACTERISTIC_UUID_FIRMWARE_REVISION  "2A26"      // Characteristic - Firmware Revision String - 0x2A26
-#define CHARACTERISTIC_UUID_HARDWARE_REVISION  "2A27"      // Characteristic - Hardware Revision String - 0x2A27
-#endif
-
 
 uint8_t tempHidReportDescriptor[MAX_REPORT_DESCRIPTOR_BYTES];
 int hidReportDescriptorSize = 0;
@@ -52,6 +42,9 @@ std::string softwareRevision;
 std::string serialNumber;
 std::string firmwareRevision;
 std::string hardwareRevision;
+
+// Pointer to callback funcion which receives output reports (e.g. force feedback) 
+GamepadCallback PGamepadOutputReportReceiver=0;
 
 GamepadHIDSub::GamepadHIDSub() : _buttons(),
                                                                                                        _specialButtons(0),
@@ -105,9 +98,20 @@ void GamepadHIDSub::resetButtons()
     const int numOfTriggerBytes=0;
 #endif
 
-void GamepadHIDSub::Configure(GamepadConfiguration *config)
+uint8_t OutputReport[] = 
+{    
+    0x09, 0x3B,    //     UsageId(Byte Count[0x003B])
+    0x15, 0x80,    //     LogicalMinimum(-128)
+    0x25, 0x7F,    //     LogicalMaximum(127)
+    0x95, 0x08,    //     ReportCount(8)
+    0x75, 0x08,    //     ReportSize(8)
+    0x91, 0x02,    //     Output(Data, Variable, Absolute, NoWrap, Linear, PreferredState, NoNullPosition, NonVolatile, BitField)
+};
+
+void GamepadHIDSub::Configure(GamepadConfiguration *config, GamepadCallback pGPCallback)
 {
     configuration = *config; // we make a copy, so the user can't change actual values midway through operation, without calling the begin function again
+    PGamepadOutputReportReceiver = pGPCallback;
 
     //----------------------------------------------------
     // Calculate the final size of the REPORT (not the descriptor!)
@@ -583,6 +587,12 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config)
             tempHidReportDescriptor[hidReportDescriptorSize++] = 0xc0;
     }
 
+    // Add output report
+    int OutRepSize = sizeof(OutputReport);
+    memcpy(tempHidReportDescriptor+hidReportDescriptorSize, OutputReport, OutRepSize);
+    hidReportDescriptorSize += OutRepSize;
+
+
     // END_COLLECTION (Application)
     tempHidReportDescriptor[hidReportDescriptorSize++] = 0xc0;
 
@@ -590,6 +600,9 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config)
         Serial.println("ERROR: Gamepad report descriptor is too long!");
 
     Serial.printf("Gamepad HID descriptor size: %d\n", hidReportDescriptorSize);
+    for (int i=0; i<hidReportDescriptorSize; i++)
+        Serial.printf("%02x ", tempHidReportDescriptor[i]); 
+    Serial.println();
 }
 
 void GamepadHIDSub::setAxes(int16_t x, int16_t y, int16_t z, int16_t rZ, int16_t rX, int16_t rY, int16_t slider1, int16_t slider2)
@@ -1515,30 +1528,14 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	Gamepad->SET_Y(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
-	// Serial.println("Press Kb to continue!"); GPWaitForSerial();
-
 	Serial.println("Pressing 'RSB/R3 (right analog)'"); Gamepad->PressButton(12, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
-
 
 	//---------------------------------------------------------------------
 	Serial.println("Pressing 'Left shoulder (front left top)'");     Gamepad->PressButton(5, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
-
-//	Serial.println("Press Kb to continue! next: Left trigger"); GPWaitForSerial();
-
-//	Serial.println("Pressing 'Left trigger  (front left bottom)'");  Gamepad->PressButton(7, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
 	Serial.println("Pressing 'Left trigger  (front left bottom)'");  
-    // Gamepad->setTrigger(0, 255); Gamepad->sendReport();  
-    // Gamepad->setBrake(255); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_REPORTS); Gamepad->setBrake(0); Gamepad->sendReport(); 
-
-	//Gamepad->setZ(32767); Gamepad->sendReport(); 
-	//delay(STEAM_DELAY_BETWEEN_REPORTS);  
-	//Gamepad->setZ(0); Gamepad->sendReport(); 
     Gamepad->setZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
     delay(STEAM_DELAY_BETWEEN_REPORTS);  
     Gamepad->setZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
-
-//	Serial.println("Press Kb to continue!"); GPWaitForSerial();
-
 
 	Serial.println("Pressing 'Right shoulder (front right top)'");   Gamepad->PressButton(6, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);       
 	Serial.println("Pressing 'Right trigger (front right bottom)'"); 
@@ -1546,32 +1543,41 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
     delay(STEAM_DELAY_BETWEEN_REPORTS);  
     Gamepad->setRZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
 
-   // Gamepad->PressButton(8, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
-    // Gamepad->setTrigger(1, 255); Gamepad->sendReport();  
-    // Gamepad->setAccelerator(255); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_REPORTS); Gamepad->setAccelerator(0); Gamepad->sendReport(); 
-
-	//Gamepad->setRZ(32767); Gamepad->sendReport(); 
-	//delay(STEAM_DELAY_BETWEEN_REPORTS);  
-	//Gamepad->setRZ(0); Gamepad->sendReport(); 
-
-//	Serial.println("Press Kb to continue!"); GPWaitForSerial();
-
 	//---------------------------------------------------------------------
 	Serial.println("Pressing 'Back/Display/Share (middle left)'");  Gamepad->PressButton(9, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);      
 	Serial.println("Pressing 'Start/Menu/Options (middle right)'"); Gamepad->PressButton(10, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
 
 	Serial.println("Pressing 'Home/Guide (middle center'"); Gamepad->PressButton(17, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
 	Serial.println("Pressing 'Share/Record (middle lower'"); Gamepad->PressButton(18, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
-
-	#if 0
-	for (int i=0; i<4; i++)
-	{
-		Serial.println("Press Kb to continue!"); GPWaitForSerial();
-		Serial.println("Pressing 'Share?'"); PressButton(1);     
-	}
-	#endif
 #endif
 }
+
+//************************************************************
+// Output callbacks
+
+class GamepadOutputCallbacks : public NimBLECharacteristicCallbacks
+{
+    public:
+        GamepadOutputCallbacks(void);
+        void onWrite(NimBLECharacteristic* me);
+};
+
+GamepadOutputCallbacks::GamepadOutputCallbacks(void) 
+{
+    // Serial.println("GamepadOutputCallbacks::GamepadOutputCallbacks()");
+}
+
+void GamepadOutputCallbacks::onWrite(NimBLECharacteristic* me) 
+{
+  Serial.println("GamepadOutputCallbacks::onWrite()");
+  if (PGamepadOutputReportReceiver)
+    PGamepadOutputReportReceiver(me->getValue().data());
+//  uint8_t* value = (uint8_t*)(me->getValue().c_str());
+//   ESP_LOGI(LOG_TAG, "special keys: %d", *value);
+}
+
+
+
 
 
 //************************************************************
@@ -1591,4 +1597,21 @@ int GamepadHIDSub::GetInputReportIndex(int Index)
     if (Index>0)
         return -1;
     return GAMEPAD_REPORT_ID; // configuration.getHidReportId();
+}
+
+
+int GamepadHIDSub::GetOutputReportIndex(int Index, NimBLECharacteristicCallbacks** OutputCallback)
+{
+	int ReportID=-1;
+    *OutputCallback = 0;
+	Serial.printf("GamepadHIDSub::GetOutputReportIndex() request for output report ID with index %d\n", Index);
+	switch(Index)
+	{
+		case 0:    
+			ReportID = GAMEPAD_REPORT_ID; 
+			*OutputCallback = new GamepadOutputCallbacks();
+			break;
+		default: ReportID = -1;
+	}
+    return ReportID; 
 }

@@ -207,6 +207,8 @@ SteamGamepadConfiguration::SteamGamepadConfiguration()
 }
 
 
+#if 0
+
 // Source: https://gist.github.com/fendent/5709856
 // XBox360 trigger:
 /*
@@ -334,3 +336,5 @@ char XBox360_ReportDescriptor[196] = {
     0xc0,                          //   END_COLLECTION      // Counted buffer
     0xc0                           // END_COLLECTION    // Application
 };
+
+#endif

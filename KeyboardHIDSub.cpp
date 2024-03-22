@@ -51,9 +51,12 @@ const uint8_t KMTComboHIDReportDescriptor[] =
 	USAGE_PAGE(1),      0x08,          //   USAGE_PAGE (LEDs)
 	USAGE_MINIMUM(1),   0x01,          //   USAGE_MINIMUM (0x01) ; Num Lock
 	USAGE_MAXIMUM(1),   0x05,          //   USAGE_MAXIMUM (0x05) ; Kana
+	
+	//---------------------------------------
 	HIDOUTPUT(1),       0x02,          //   OUTPUT (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
 	REPORT_COUNT(1),    0x01,          //   REPORT_COUNT (1) ; 3 bits (Padding)
 	REPORT_SIZE(1),     0x03,          //   REPORT_SIZE (3)
+	//---------------------------------------
 	HIDOUTPUT(1),       0x01,          //   OUTPUT (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
 	REPORT_COUNT(1),    0x06,          //   REPORT_COUNT (6) ; 6 bytes (Keys)
 	REPORT_SIZE(1),     0x08,          //   REPORT_SIZE(8)
@@ -62,8 +65,10 @@ const uint8_t KMTComboHIDReportDescriptor[] =
 	USAGE_PAGE(1),      0x07,          //   USAGE_PAGE (Kbrd/Keypad)
 	USAGE_MINIMUM(1),   0x00,          //   USAGE_MINIMUM (0)
 	USAGE_MAXIMUM(1),   0x65,          //   USAGE_MAXIMUM (0x65)
+	//---------------------------------------
 	HIDINPUT(1),        0x00,          //   INPUT (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
 	END_COLLECTION(0),                 // END_COLLECTION
+	
 	// ------------------------------------------------- Media Keys
 	USAGE_PAGE(1),      0x0C,          // USAGE_PAGE (Consumer)
 	USAGE(1),           0x01,          // USAGE (Consumer Control)
