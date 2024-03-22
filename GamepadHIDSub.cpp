@@ -1569,7 +1569,7 @@ GamepadOutputCallbacks::GamepadOutputCallbacks(void)
 
 void GamepadOutputCallbacks::onWrite(NimBLECharacteristic* me) 
 {
-  Serial.println("GamepadOutputCallbacks::onWrite()");
+  // Serial.println("GamepadOutputCallbacks::onWrite()");
   if (PGamepadOutputReportReceiver)
     PGamepadOutputReportReceiver(me->getValue().data());
 //  uint8_t* value = (uint8_t*)(me->getValue().c_str());
