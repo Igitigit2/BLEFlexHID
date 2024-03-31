@@ -1547,9 +1547,10 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	Serial.println("Pressing 'Back/Display/Share (middle left)'");  Gamepad->PressButton(9, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);      
 	Serial.println("Pressing 'Start/Menu/Options (middle right)'"); Gamepad->PressButton(10, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
 
-	Serial.println("Pressing 'Home/Guide (middle center'"); Gamepad->PressButton(17, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
-	Serial.println("Pressing 'Share/Record (middle lower'"); Gamepad->PressButton(18, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+	Serial.println("Pressing 'Home/Guide (middle center')"); Gamepad->PressButton(17, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+	Serial.println("Pressing 'Share/Record (middle lower')"); Gamepad->PressButton(18, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
 #endif
+    Serial.printf("Gamepad test over\n");
 }
 
 //************************************************************
