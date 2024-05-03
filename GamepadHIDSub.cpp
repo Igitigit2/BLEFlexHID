@@ -353,8 +353,8 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config, GamepadCallback pGPC
         tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
 
         // USAGE (Pointer)
-        tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
-        tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
+//        tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+//        tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
 
         // LOGICAL_MINIMUM (-32767)
         tempHidReportDescriptor[hidReportDescriptorSize++] = 0x16;
@@ -374,17 +374,38 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config, GamepadCallback pGPC
 		    //tempHidReportDescriptor[hidReportDescriptorSize++] = 0xFF;	// Use these two lines for +32767 max
         //tempHidReportDescriptor[hidReportDescriptorSize++] = 0x7F;
 
+        // Physical minimum
+        tempHidReportDescriptor[hidReportDescriptorSize++] = 0x36;
+        tempHidReportDescriptor[hidReportDescriptorSize++] = lowByte(-32768);
+        tempHidReportDescriptor[hidReportDescriptorSize++] = highByte(-32767);
+
+        // Physical maximum
+        tempHidReportDescriptor[hidReportDescriptorSize++] = 0x46;
+        tempHidReportDescriptor[hidReportDescriptorSize++] = lowByte(32768);
+        tempHidReportDescriptor[hidReportDescriptorSize++] = highByte(32767);
+
+
         // REPORT_SIZE (16)
         tempHidReportDescriptor[hidReportDescriptorSize++] = 0x75;
         tempHidReportDescriptor[hidReportDescriptorSize++] = 0x10;
 
-        // REPORT_COUNT (configuration.getAxisCount())
-        tempHidReportDescriptor[hidReportDescriptorSize++] = 0x95;
-        tempHidReportDescriptor[hidReportDescriptorSize++] = configuration.getAxisCount();
+
+        int InputSize;
+        InputSize = (configuration.getIncludeXAxis()?1:0) + (configuration.getIncludeYAxis()?1:0);
+
+        if (InputSize)
+        {
+            // USAGE (Pointer)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
 
             // COLLECTION (Physical)
             tempHidReportDescriptor[hidReportDescriptorSize++] = 0xA1;
             tempHidReportDescriptor[hidReportDescriptorSize++] = 0x00;
+
+            // REPORT_COUNT (configuration.getAxisCount())
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x95;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = InputSize;
 
             if (configuration.getIncludeXAxis())
             {
@@ -400,11 +421,37 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config, GamepadCallback pGPC
                 tempHidReportDescriptor[hidReportDescriptorSize++] = 0x31;
             }
 
+            // INPUT (Data,Var,Abs)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x81;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x02;
+
+            // END_COLLECTION (Physical)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0xc0;
+        }
+
+        // COLLECTION (Physical)
+        InputSize = (configuration.getIncludeZAxis()?1:0) + (configuration.getIncludeRzAxis()?1:0);
+
+        if (InputSize)
+        {
+            // USAGE (Pointer)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
+
+            // COLLECTION (Physical)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0xA1;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x00;
+
+            // REPORT_COUNT (configuration.getAxisCount())
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x95;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = InputSize;
+
             if (configuration.getIncludeZAxis())
             {
                 // USAGE (Z)
                 tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
                 tempHidReportDescriptor[hidReportDescriptorSize++] = 0x32;
+                InputSize++;
             }
 
             if (configuration.getIncludeRzAxis())
@@ -412,34 +459,7 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config, GamepadCallback pGPC
                 // USAGE (Rz)
                 tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
                 tempHidReportDescriptor[hidReportDescriptorSize++] = 0x35;
-            }
-
-            if (configuration.getIncludeRxAxis())
-            {
-                // USAGE (Rx)
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x33;
-            }
-
-            if (configuration.getIncludeRyAxis())
-            {
-                // USAGE (Ry)
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x34;
-            }
-
-            if (configuration.getIncludeSlider1())
-            {
-                // USAGE (Slider)
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x36;
-            }
-
-            if (configuration.getIncludeSlider2())
-            {
-                // USAGE (Slider)
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
-                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x36;
+                InputSize++;
             }
 
             // INPUT (Data,Var,Abs)
@@ -448,7 +468,84 @@ void GamepadHIDSub::Configure(GamepadConfiguration *config, GamepadCallback pGPC
 
             // END_COLLECTION (Physical)
             tempHidReportDescriptor[hidReportDescriptorSize++] = 0xc0;
+        }   
 
+
+        InputSize = (configuration.getIncludeRxAxis()?1:0) + (configuration.getIncludeRyAxis()?1:0);
+
+        if (InputSize)
+        {
+
+            // USAGE (Pointer)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x01;
+
+            // COLLECTION (Physical)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0xA1;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x00;
+
+            // REPORT_COUNT (configuration.getAxisCount())
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x95;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = InputSize;
+
+            if (configuration.getIncludeRxAxis())
+            {
+                // USAGE (Rx)
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x33;
+                InputSize++;
+            }
+
+            if (configuration.getIncludeRyAxis())
+            {
+                // USAGE (Ry)
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x34;
+                InputSize++;
+            }
+
+            // INPUT (Data,Var,Abs)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x81;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x02;
+
+            // END_COLLECTION (Physical)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0xc0;
+         }   
+
+        InputSize = (configuration.getIncludeSlider1()?1:0) + (configuration.getIncludeSlider2()?1:0);
+        if (InputSize)
+        {
+            // COLLECTION (Physical)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0xA1;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x00;
+
+            // REPORT_COUNT (configuration.getAxisCount())
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x95;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = InputSize;
+
+            if (configuration.getIncludeSlider1())
+            {
+                // USAGE (Slider)
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x36;
+                InputSize++;
+            }
+
+            if (configuration.getIncludeSlider2())
+            {
+                // USAGE (Slider)
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x09;
+                tempHidReportDescriptor[hidReportDescriptorSize++] = 0x36;
+                InputSize++;
+            }
+
+            // INPUT (Data,Var,Abs)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x81;
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0x02;
+
+            // END_COLLECTION (Physical)
+            tempHidReportDescriptor[hidReportDescriptorSize++] = 0xc0;
+        }
     } // X, Y, Z, Rx, Ry, and Rz Axis
 
     if (configuration.getSimulationCount() > 0)
@@ -1452,9 +1549,10 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
     }
 
 #if 1
-	Serial.println("Presss any key to start Steam controller test!");
-	GPWaitForSerial();
-	// Steam Einrichtung
+	// Serial.println("Presss any key to start Steam controller test!");
+	// GPWaitForSerial();
+	
+    // Steam Einrichtung
 	Serial.println("Pressing 'A'"); Gamepad->PressButton(1, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
 	Serial.println("Pressing 'B'"); Gamepad->PressButton(2, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);       
 	Serial.println("Pressing 'X'"); Gamepad->PressButton(3, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
@@ -1481,17 +1579,16 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	Gamepad->setX(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
-//Serial.println("Press Kb to continue! next Y->max"); GPWaitForSerial();
-	Serial.println("Y to max (top) and back");  // Wird nicht erkannt!!
-	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(2*STEAM_DELAY_BETWEEN_AXES);}
+    //Serial.println("Press Kb to continue! next Y->max"); GPWaitForSerial();
+	Serial.println("Y to max (top) and back"); 
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_AXES);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Gamepad->setY(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
-// Serial.println("Press Kb to continue!"); GPWaitForSerial();
 
-//Serial.println("Press Kb to continue! next Y->min"); GPWaitForSerial();
+    // Serial.println("Press Kb to continue! next Y->min"); GPWaitForSerial();
 	Serial.println("Y to min (bottom) and back");
-	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(STEAM_DELAY_BETWEEN_AXES);}
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->setY(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(2*STEAM_DELAY_BETWEEN_AXES);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Gamepad->setY(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
@@ -1528,26 +1625,37 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	Gamepad->SET_Y(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
+//- Serial.println("Press Kb to continue! next: RSB/R3"); GPWaitForSerial();
 	Serial.println("Pressing 'RSB/R3 (right analog)'"); Gamepad->PressButton(12, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
 
 	//---------------------------------------------------------------------
+// Serial.println("Press Kb to continue! next: Left shoulder"); GPWaitForSerial();
 	Serial.println("Pressing 'Left shoulder (front left top)'");     Gamepad->PressButton(5, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+// Serial.println("Press Kb to continue! next: Left trigger"); GPWaitForSerial();
+    delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Serial.println("Pressing 'Left trigger  (front left bottom)'");  
     Gamepad->setZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
     delay(STEAM_DELAY_BETWEEN_REPORTS);  
     Gamepad->setZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
 
+//- Serial.println("Press Kb to continue! next: Right shoulder"); GPWaitForSerial();
 	Serial.println("Pressing 'Right shoulder (front right top)'");   Gamepad->PressButton(6, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);       
+    delay(STEAM_DELAY_BETWEEN_REPORTS);  
+// Serial.println("Press Kb to continue! next: Right trigger"); GPWaitForSerial();
 	Serial.println("Pressing 'Right trigger (front right bottom)'"); 
     Gamepad->setRZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
     delay(STEAM_DELAY_BETWEEN_REPORTS);  
     Gamepad->setRZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
 
 	//---------------------------------------------------------------------
+// Serial.println("Press Kb to continue! next: Back/Display/Share"); GPWaitForSerial();
 	Serial.println("Pressing 'Back/Display/Share (middle left)'");  Gamepad->PressButton(9, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);      
+// Serial.println("Press Kb to continue! next: Start/Menu/Options"); GPWaitForSerial();
 	Serial.println("Pressing 'Start/Menu/Options (middle right)'"); Gamepad->PressButton(10, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);  
 
+// Serial.println("Press Kb to continue! next: Home/Guide"); GPWaitForSerial();
 	Serial.println("Pressing 'Home/Guide (middle center')"); Gamepad->PressButton(17, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
+// Serial.println("Press Kb to continue! next: Share/Record"); GPWaitForSerial();
 	Serial.println("Pressing 'Share/Record (middle lower')"); Gamepad->PressButton(18, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);     
 #endif
     Serial.printf("Gamepad test over\n");

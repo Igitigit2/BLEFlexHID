@@ -196,6 +196,8 @@ SteamGamepadConfiguration::SteamGamepadConfiguration()
     setButtonCount(numOfButtons);
     setIncludeStart(true);
     setIncludeSelect(true);
+    setAxesMin(-32768);
+    setAxesMax(32767);
     setWhichAxes(enableX, enableY, enableZ, enableRX, enableRY, enableRZ, enableSlider1, enableSlider2);      // Can also be done per-axis individually. All are true by default
     setWhichSimulationControls(enableRudder, enableThrottle, enableAccelerator, enableBrake, enableSteering); // Can also be done per-control individually. All are false by default
     setSimulationMin(0);
@@ -324,6 +326,7 @@ char XBox360_ReportDescriptor[196] = {
     0x09, 0x31,                    //       USAGE (Y)
     0x81, 0x02,                    //       INPUT (Data,Var,Abs)
     0xc0,                          //     END_COLLECTION
+
     0x05, 0x01,                    //     USAGE_PAGE (Generic Desktop)
     0x09, 0x01,                    //     USAGE (Pointer)
     0xa1, 0x00,                    //     COLLECTION (Physical)
@@ -333,6 +336,7 @@ char XBox360_ReportDescriptor[196] = {
     0x09, 0x34,                    //       USAGE (Ry)
     0x81, 0x02,                    //       INPUT (Data,Var,Abs)
     0xc0,                          //     END_COLLECTION        // Pointer
+    
     0xc0,                          //   END_COLLECTION      // Counted buffer
     0xc0                           // END_COLLECTION    // Application
 };
