@@ -1510,10 +1510,10 @@ void GPWaitForSerial()
 void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 {
 	#define TEST_STEP                   1024
-	#define STEAM_DELAY_BETWEEN_REPORTS 500
+	#define STEAM_DELAY_BETWEEN_REPORTS 700
     #define BTN_PRESS_DURATION          200
     #define BTN_DELAY_AFTER_RELEASE     300
-    #define STEAM_DELAY_BETWEEN_AXES    30
+    #define STEAM_DELAY_BETWEEN_AXES    50
 
 
 
@@ -1614,13 +1614,13 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
 	Serial.println("RY to max (top) and back");
-	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->SET_Y(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->SET_Y(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Gamepad->SET_Y(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 
 	Serial.println("RY to min (bottom) and back");
-	for (int i=0; i>= -32767; i-=TEST_STEP) {Gamepad->SET_Y(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	for (int i=0; i<=32767; i+=TEST_STEP) {Gamepad->SET_Y(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
 	Gamepad->SET_Y(0); Gamepad->sendReport(); 
 	delay(STEAM_DELAY_BETWEEN_REPORTS);  
@@ -1630,12 +1630,14 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
 
 	//---------------------------------------------------------------------
 // Serial.println("Press Kb to continue! next: Left shoulder"); GPWaitForSerial();
-	Serial.println("Pressing 'Left shoulder (front left top)'");     Gamepad->PressButton(5, BTN_PRESS_DURATION, BTN_DELAY_AFTER_RELEASE);   
+	Serial.println("Pressing 'Left shoulder (front left top, LB)'");     Gamepad->PressButton(5, 2*BTN_PRESS_DURATION, 2*BTN_DELAY_AFTER_RELEASE);   
 // Serial.println("Press Kb to continue! next: Left trigger"); GPWaitForSerial();
     delay(STEAM_DELAY_BETWEEN_REPORTS);  
-	Serial.println("Pressing 'Left trigger  (front left bottom)'");  
-    Gamepad->setZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
-    delay(STEAM_DELAY_BETWEEN_REPORTS);  
+	Serial.println("Pressing 'Left trigger  (front left bottom, LT/L2)'");  
+//    Gamepad->setZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
+//	for (int i=-32767; i<=32767; i+=TEST_STEP) {Gamepad->setZ(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	for (int i=32767; i> -32767; i-=TEST_STEP) {Gamepad->setZ(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+    delay(2*STEAM_DELAY_BETWEEN_REPORTS);  
     Gamepad->setZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
 
 //- Serial.println("Press Kb to continue! next: Right shoulder"); GPWaitForSerial();
@@ -1643,7 +1645,9 @@ void RunSteamGamepadTest(GamepadHIDSub* Gamepad)
     delay(STEAM_DELAY_BETWEEN_REPORTS);  
 // Serial.println("Press Kb to continue! next: Right trigger"); GPWaitForSerial();
 	Serial.println("Pressing 'Right trigger (front right bottom)'"); 
-    Gamepad->setRZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
+//    Gamepad->setRZ(constrain(32767, -32767, 32767)); Gamepad->sendReport(); 
+//	for (int i=-32767; i<=32767; i+=TEST_STEP) {Gamepad->setRZ(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
+	for (int i=32767; i> -32767; i-=TEST_STEP) {Gamepad->setRZ(constrain(i, -32767, 32767)); Gamepad->sendReport(); delay(20);}
     delay(STEAM_DELAY_BETWEEN_REPORTS);  
     Gamepad->setRZ(constrain(-32767, -32767, 32767)); Gamepad->sendReport(); 
 
